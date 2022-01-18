@@ -1,24 +1,81 @@
-const getAllTasks = (req, res) => {
-  res.send("All Items");
+const Task = require("./../models/Task");
+
+const getAllTasks = async (req, res) => {
+  try {
+    const tasks = await Task.find();
+    res.status(200).json({ tasks });
+  } catch (error) {
+    // console.log(error);
+    res.status(500).json({ msg: error });
+  }
 };
 
-const createTask = (req, res) => {
-  const { task } = req.body;
-  res.status(200).json({ task });
+const createTask = async (req, res) => {
+  try {
+    const task = await Task.create(req.body);
+    res.status(201).json({ task });
+  } catch (error) {
+    // console.log(error);
+    res.status(500).json({ msg: error });
+  }
 };
 
-const getTask = (req, res) => {
-  res.json({ action: "Get Single Task", data: req.params });
+const getTask = async (req, res) => {
+  try {
+    const { id: taskID } = req.params;
+    const task = await Task.findOne({ _id: taskID });
+    if (task) {
+      return res.status(200).json({ success: true, task });
+    }
+    res.status(404).json({
+      success: false,
+      msg: `No matching task found for ID: ${taskID}`,
+    });
+  } catch (error) {
+    // console.log(error);
+    res.status(500).json({ success: false, error });
+  }
 };
 
-const editTask = (req, res) => {
-  res.send("Edit One task");
+const deleteTask = async (req, res) => {
+  try {
+    const { id: taskID } = req.params;
+    const task = await Task.findByIdAndDelete({ _id: taskID });
+    if (task) {
+      return res
+        .status(201)
+        .json({ success: true, msg: "Deleted Succesfully" });
+    }
+    res.status(404).json({
+      success: false,
+      msg: `No matching task found for ID: ${taskID}`,
+    });
+  } catch (error) {
+    // console.log(error);
+    res.status(500).json({ success: false, error });
+  }
 };
 
-const deleteTask = (req, res) => {
-  res.send("Delete one task");
-};
+const editTask = async (req, res) => {
+  try {
+    const { id: taskID } = req.params;
+    const { name, completed } = req.body;
+    const task = await Task.findOneAndUpdate({ _id: taskID }, req.body, {
+      new: true,
+      runValidators: true,
+    });
 
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        msg: `No matching task found for ID: ${taskID}`,
+      });
+    }
+    res.status(200).json({ id: taskID, data: req.body });
+  } catch (error) {
+    res.status(500).json({ msg: error });
+  }
+};
 module.exports = {
   getAllTasks,
   createTask,
